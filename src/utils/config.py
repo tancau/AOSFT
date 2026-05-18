@@ -5,7 +5,7 @@
 import os
 from pathlib import Path
 from typing import Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from dotenv import load_dotenv
 
 
@@ -27,7 +27,8 @@ class APIConfig(BaseModel):
     telegram_bot_token: Optional[str] = Field(None, description="Telegram Bot Token")
     telegram_chat_id: Optional[str] = Field(None, description="Telegram Chat ID")
     
-    @validator('okx_api_key', 'okx_secret', 'okx_password')
+    @field_validator('okx_api_key', 'okx_secret', 'okx_password')
+    @classmethod
     def validate_okx_credentials(cls, v):
         if not v or v == 'your_api_key_here':
             raise ValueError("OKX API凭证未配置，请检查.env文件")
@@ -56,7 +57,8 @@ class StrategyConfig(BaseModel):
     max_drawdown_global: float = Field(0.20, description="全局最大回撤熔断", gt=0, le=1.0)
     fear_greed_ceiling: int = Field(80, description="情绪过热不开仓阈值", ge=0, le=100)
     
-    @validator('position_ratio', 'max_loss_per_trade', 'max_drawdown_global')
+    @field_validator('position_ratio', 'max_loss_per_trade', 'max_drawdown_global')
+    @classmethod
     def validate_ratio(cls, v):
         if not 0 < v <= 1:
             raise ValueError(f"比例值必须在(0, 1]范围内")
