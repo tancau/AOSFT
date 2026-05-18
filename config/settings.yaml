@@ -1,0 +1,54 @@
+# AOSFT-MVP 策略参数配置
+# 所有策略参数均可在此文件中修改，无需修改代码
+
+strategy:
+  ma_period: 20
+  atr_period: 14
+  atr_ma_period: 30
+  netflow_ma_days: 7
+  stable_change_days: 7
+  netflow_confirm_days: 3
+  stable_confirm_days: 3
+  stop_atr_multiplier: 2.0
+  position_ratio: 0.5
+  max_loss_per_trade: 0.05
+  max_drawdown_global: 0.20
+  fear_greed_ceiling: 80
+
+data_quality:
+  freshness_threshold: 3
+  quality_full_threshold: 1
+  quality_downgrade_threshold: 2
+
+order:
+  limit_order_timeout: 300
+  max_order_timeout: 1800
+  slippage_tolerance: 0.002
+
+recovery:
+  stage1_days: 10
+  stage2_days: 20
+  stage1_position_ratio: 0.5
+
+risk:
+  flash_crash_threshold: 0.05
+  flash_crash_window_minutes: 15
+  black_swan_24h_threshold: 0.15
+  abnormal_volatility_threshold: 0.10
+  abnormal_loss_threshold: 0.08
+  stop_check_interval_hours: 4
+
+schedule:
+  data_collection: "0 5 * * *"
+  trading_execution: "0 10 * * *"
+  risk_check: "0 */4 * * *"
+  flash_crash_monitor: "*/15 * * * *"
+  data_freshness_check: "0 * * * *"
+  monitoring_update: "*/5 * * * *"
+
+notification:
+  telegram_enabled: true
+  notify_on_trade: true
+  notify_on_alert: true
+  notify_daily_report: true
+  daily_report_time: "08:00"

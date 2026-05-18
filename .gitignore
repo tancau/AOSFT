@@ -69,3 +69,11 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# CodeArts内部文件
+.arts/
+.codeartsdoer/temp/
+.codeartsdoer/.codebaseignore
+
+# 重复的docs目录(docs/README.MD已移至根目录)
+docs/

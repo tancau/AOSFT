@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  aosft:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aosft-mvp
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - aosft-data:/app/data
+      - aosft-logs:/app/logs
+    environment:
+      - LOG_LEVEL=INFO
+      - DATABASE_PATH=data/aosft.db
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  aosft-data:
+    driver: local
+  aosft-logs:
+    driver: local
