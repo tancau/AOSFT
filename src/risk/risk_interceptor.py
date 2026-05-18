@@ -16,10 +16,10 @@ logger = logging.getLogger("aosft")
 
 
 class RiskInterceptor:
-    def __init__(self, repo: DataRepository):
+    def __init__(self, repo: DataRepository, stale_threshold: int = 3):
         self.repo = repo
         self.circuit_checker = CircuitBreakerChecker(repo)
-        self.freshness_checker = DataFreshnessChecker(repo)
+        self.freshness_checker = DataFreshnessChecker(repo, stale_threshold)
         self.anomaly_checker = MarketAnomalyChecker(repo)
     
     def intercept(self, signal: Optional[TradeSignal] = None) -> dict:

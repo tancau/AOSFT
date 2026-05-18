@@ -90,7 +90,7 @@ class FearGreedInterface:
                 results.append({
                     'date': date,
                     'value': int(item['value']),
-                    'classification': item['value_classification']
+                    'classification': item.get('value_classification', '')
                 })
             
             results.sort(key=lambda x: x['date'])

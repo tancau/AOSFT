@@ -78,7 +78,7 @@ class StrategyEngine:
         self.regime_detector = RegimeDetector()
         self.tech_indicators = TechnicalIndicators()
         self.onchain_indicators = OnchainIndicators()
-        self.risk_interceptor = RiskInterceptor(repo)
+        self.risk_interceptor = RiskInterceptor(repo, config.data_quality.freshness_threshold)
     
     def run_daily(self) -> Optional[TradeSignal]:
         if not self.risk_interceptor.quick_check():

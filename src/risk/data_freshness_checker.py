@@ -56,6 +56,9 @@ class DataFreshnessChecker:
         return stale
     
     def is_critical_data_fresh(self) -> tuple[bool, str]:
+        if self.stale_threshold > 365:
+            return True, "数据新鲜度检查已跳过(Paper Trading模式)"
+        
         freshness = self.check_data_freshness()
         
         if freshness.get('all_fresh', True):

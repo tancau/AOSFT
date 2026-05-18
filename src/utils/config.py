@@ -30,8 +30,8 @@ class APIConfig(BaseModel):
     @field_validator('okx_api_key', 'okx_secret', 'okx_password')
     @classmethod
     def validate_okx_credentials(cls, v):
-        if not v or v == 'your_api_key_here':
-            raise ValueError("OKX API凭证未配置，请检查.env文件")
+        if not v or v in ('your_api_key_here', 'your_secret_key_here', 'your_password_here'):
+            return 'not_configured'
         return v
     
     def get_masked_credentials(self) -> dict:
