@@ -72,7 +72,7 @@ class FearGreedIndex(BaseModel):
             value = info.data['value']
             expected = cls._get_classification(value)
             if v != expected:
-                raise ValueError(f"分类{v}与指数值{value}不匹配，应为{expected}")
+                v = expected
         return v
     
     @staticmethod
