@@ -75,7 +75,10 @@ class StrategyEngine:
         self.signal_generator = SignalGenerator(
             fear_greed_ceiling=config.strategy.fear_greed_ceiling
         )
-        self.regime_detector = RegimeDetector()
+        self.regime_detector = RegimeDetector(
+            atr_low_buffer=getattr(config.strategy, 'atr_low_buffer', 0.8),
+            atr_high_buffer=getattr(config.strategy, 'atr_high_buffer', 1.2)
+        )
         self.tech_indicators = TechnicalIndicators()
         self.onchain_indicators = OnchainIndicators()
         self.risk_interceptor = RiskInterceptor(repo, config.data_quality.freshness_threshold)

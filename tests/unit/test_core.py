@@ -66,6 +66,31 @@ class TestRegimeDetector:
             close=45000, ma=44000, atr=500, atr_ma=1000
         )
         assert regime == MarketRegime.LOW_VOLATILE
+    
+    def test_transitioning_above_ma(self):
+        regime = self.detector.identify(
+            close=50000, ma=48000, atr=1000, atr_ma=1000
+        )
+        assert regime == MarketRegime.TRANSITIONING
+    
+    def test_transitioning_at_buffer_boundary(self):
+        regime = self.detector.identify(
+            close=50000, ma=48000, atr=960, atr_ma=1000
+        )
+        assert regime == MarketRegime.TRANSITIONING
+    
+    def test_transitioning_below_ma_stays_low(self):
+        regime = self.detector.identify(
+            close=40000, ma=45000, atr=1000, atr_ma=1000
+        )
+        assert regime == MarketRegime.LOW_VOLATILE
+    
+    def test_custom_buffer(self):
+        detector = RegimeDetector(atr_low_buffer=0.9, atr_high_buffer=1.1)
+        regime = detector.identify(
+            close=50000, ma=48000, atr=950, atr_ma=1000
+        )
+        assert regime == MarketRegime.TRANSITIONING
 
 
 class TestSignalGenerator:
@@ -110,6 +135,17 @@ class TestSignalGenerator:
             fear_greed_value=85
         )
         assert signal is None
+    
+    def test_open_signal_transitioning_regime(self):
+        signal = self.generator.generate_open_signal(
+            regime=MarketRegime.TRANSITIONING,
+            price=50000,
+            netflow_negative=True,
+            stable_positive=True,
+            fear_greed_value=50
+        )
+        assert signal is not None
+        assert signal.signal_type == SignalType.OPEN
     
     def test_close_signal_bear_regime(self):
         signal = self.generator.generate_close_signal(

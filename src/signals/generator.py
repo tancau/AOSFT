@@ -24,8 +24,12 @@ class SignalGenerator:
         fear_greed_value: Optional[int] = None,
         symbol: str = "BTC/USDT"
     ) -> Optional[TradeSignal]:
-        if regime != MarketRegime.BULL_VOLATILE:
-            logger.debug(f"开仓条件不满足: 体制={regime.value}(需要BULL_VOLATILE)")
+        if regime == MarketRegime.BULL_VOLATILE:
+            pass
+        elif regime == MarketRegime.TRANSITIONING:
+            pass
+        else:
+            logger.debug(f"开仓条件不满足: 体制={regime.value}(需要BULL_VOLATILE或TRANSITIONING)")
             return None
         
         if not netflow_negative:
@@ -40,6 +44,7 @@ class SignalGenerator:
             logger.debug(f"开仓条件不满足: 情绪指数{fear_greed_value}≥{self.fear_greed_ceiling}(极度贪婪)")
             return None
         
+        regime_desc = "BULL_VOLATILE" if regime == MarketRegime.BULL_VOLATILE else "TRANSITIONING(波动过渡)"
         signal = TradeSignal(
             timestamp=datetime.now().isoformat(),
             signal_type=SignalType.OPEN,
@@ -49,7 +54,7 @@ class SignalGenerator:
             netflow_condition=True,
             stable_condition=True,
             fg_condition=True,
-            reason="所有开仓条件满足: BULL_VOLATILE+净流入为负+稳定币增长"
+            reason=f"开仓条件满足: {regime_desc}+净流入为负+稳定币增长"
         )
         
         logger.info(f"[SIGNAL] 开仓信号: price={price:.2f} regime={regime.value}")

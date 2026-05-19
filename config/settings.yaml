@@ -14,6 +14,8 @@ strategy:
   max_loss_per_trade: 0.05
   max_drawdown_global: 0.20
   fear_greed_ceiling: 80
+  atr_low_buffer: 0.8
+  atr_high_buffer: 1.2
 
 data_quality:
   freshness_threshold: 3
@@ -45,6 +47,38 @@ schedule:
   flash_crash_monitor: "*/15 * * * *"
   data_freshness_check: "0 * * * *"
   monitoring_update: "*/5 * * * *"
+
+api_rate_limit:
+  coingecko:
+    rate: 0.5
+    capacity: 1
+    max_retries: 3
+    base_delay: 2.0
+  fear_greed:
+    rate: 1.0
+    capacity: 2
+    max_retries: 3
+    base_delay: 1.0
+  glassnode:
+    rate: 1.0
+    capacity: 3
+    max_retries: 3
+    base_delay: 1.0
+  cryptoquant:
+    rate: 1.0
+    capacity: 3
+    max_retries: 3
+    base_delay: 1.0
+  coinmetrics:
+    rate: 1.0
+    capacity: 5
+    max_retries: 3
+    base_delay: 1.0
+  telegram:
+    rate: 0.5
+    capacity: 1
+    max_retries: 2
+    base_delay: 1.0
 
 notification:
   telegram_enabled: true

@@ -9,10 +9,11 @@ class MarketRegime(str, Enum):
     BULL_VOLATILE = "BULL_VOLATILE"
     BEAR_VOLATILE = "BEAR_VOLATILE"
     LOW_VOLATILE = "LOW_VOLATILE"
+    TRANSITIONING = "TRANSITIONING"
     
     @property
     def allow_long(self) -> bool:
-        return self == MarketRegime.BULL_VOLATILE
+        return self in (MarketRegime.BULL_VOLATILE, MarketRegime.TRANSITIONING)
     
     @property
     def is_dangerous(self) -> bool:
@@ -38,6 +39,7 @@ class PositionStatus(str, Enum):
 class DataSource(str, Enum):
     GLASSNODE = "GLASSNODE"
     CRYPTOQUANT = "CRYPTOQUANT"
+    COINMETRICS = "COINMETRICS"
     OKX = "OKX"
     COINGECKO = "COINGECKO"
     ALTERNATIVE_ME = "ALTERNATIVE_ME"

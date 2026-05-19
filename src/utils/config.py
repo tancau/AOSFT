@@ -56,6 +56,8 @@ class StrategyConfig(BaseModel):
     max_loss_per_trade: float = Field(0.05, description="单笔最大亏损占比", gt=0, le=1.0)
     max_drawdown_global: float = Field(0.20, description="全局最大回撤熔断", gt=0, le=1.0)
     fear_greed_ceiling: int = Field(80, description="情绪过热不开仓阈值", ge=0, le=100)
+    atr_low_buffer: float = Field(0.8, description="ATR缓冲区下界(ATR/ATR均值)", gt=0, le=1.0)
+    atr_high_buffer: float = Field(1.2, description="ATR缓冲区上界(ATR/ATR均值)", ge=1.0, le=2.0)
     
     @field_validator('position_ratio', 'max_loss_per_trade', 'max_drawdown_global')
     @classmethod
@@ -118,6 +120,8 @@ class Config(BaseModel):
             max_loss_per_trade=float(os.getenv('MAX_LOSS_PER_TRADE', '0.05')),
             max_drawdown_global=float(os.getenv('MAX_DRAWDOWN_GLOBAL', '0.20')),
             fear_greed_ceiling=int(os.getenv('FEAR_GREED_CEILING', '80')),
+            atr_low_buffer=float(os.getenv('ATR_LOW_BUFFER', '0.8')),
+            atr_high_buffer=float(os.getenv('ATR_HIGH_BUFFER', '1.2')),
         )
         
         data_quality_config = DataQualityConfig(

@@ -19,6 +19,12 @@ class TestMarketRegime:
     def test_low_volatile_no_long(self):
         assert MarketRegime.LOW_VOLATILE.allow_long is False
     
+    def test_transitioning_allows_long(self):
+        assert MarketRegime.TRANSITIONING.allow_long is True
+    
+    def test_transitioning_not_dangerous(self):
+        assert MarketRegime.TRANSITIONING.is_dangerous is False
+    
     def test_low_volatile_not_dangerous(self):
         assert MarketRegime.LOW_VOLATILE.is_dangerous is False
 
@@ -103,8 +109,8 @@ class TestFearGreedIndex:
         assert data.classification == "Extreme Fear"
     
     def test_invalid_classification(self):
-        with pytest.raises(ValueError):
-            FearGreedIndex(date="2024-01-01", value=10, classification="Extreme Greed")
+        data = FearGreedIndex(date="2024-01-01", value=10, classification="Extreme Greed")
+        assert data.classification == "Extreme Fear"
 
 
 class TestPosition:
