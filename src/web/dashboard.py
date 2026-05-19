@@ -3,7 +3,9 @@ AOSFT-MVP Web UI - Streamlit监控面板
 """
 import sys
 import time
+import subprocess
 from pathlib import Path
+from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import streamlit as st
@@ -14,6 +16,34 @@ from src.indicators.calculator import TechnicalIndicators
 from src.regime.detector import RegimeDetector
 from src.models.enums import MarketRegime
 import pandas as pd
+
+
+def get_process_uptime():
+    try:
+        result = subprocess.run(
+            ["ps", "-o", "etime,pid", "-C", "python3"],
+            capture_output=True, text=True, timeout=5
+        )
+        lines = result.stdout.strip().split('\n')
+        for line in lines[1:]:
+            parts = line.strip().split()
+            if len(parts) >= 2:
+                return parts[0]
+        return "-"
+    except Exception:
+        return "-"
+
+
+def get_log_content(log_path: str, lines: int = 100):
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.readlines()
+            return ''.join(content[-lines:])
+    except FileNotFoundError:
+        return f"日志文件不存在: {log_path}"
+    except Exception as e:
+        return f"读取日志失败: {e}"
+
 
 st.set_page_config(
     page_title="AOSFT-MVP",
@@ -44,6 +74,13 @@ if auto_refresh:
         if elapsed >= refresh_interval:
             st.session_state.last_refresh = time.time()
             st.rerun()
+
+st.sidebar.markdown("---")
+
+uptime = get_process_uptime()
+now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+st.sidebar.markdown(f"⏰ **当前时间**: {now_str}")
+st.sidebar.markdown(f"🚀 **运行时长**: {uptime}")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("**AOSFT-MVP** v1.0")
@@ -342,3 +379,29 @@ with st.expander("🔧 系统配置参数"):
     config_df = service.get_system_config()
     if not config_df.empty:
         st.dataframe(config_df, width="stretch", hide_index=True)
+
+# ========== 底部：日志查看 ==========
+with st.expander("📋 运行日志"):
+    log_col1, log_col2, log_col3 = st.columns([2, 1, 1])
+    with log_col1:
+        log_file = st.selectbox(
+            "选择日志文件",
+            ["logs/paper_trading.log", "logs/webui.log", "logs/aosft.log"],
+            index=0
+        )
+    with log_col2:
+        log_lines = st.number_input("显示行数", min_value=50, max_value=1000, value=100, step=50)
+    with log_col3:
+        log_auto_refresh = st.checkbox("日志自动刷新", value=False)
+        if log_auto_refresh:
+            log_refresh_interval = st.number_input("刷新间隔(秒)", min_value=5, max_value=60, value=10)
+
+    if log_auto_refresh:
+        try:
+            from streamlit_autorefresh import st_autorefresh
+            st_autorefresh(interval=log_refresh_interval * 1000, key="logrefresh")
+        except ImportError:
+            pass
+
+    log_content = get_log_content(log_file, log_lines)
+    st.code(log_content, language="text")
