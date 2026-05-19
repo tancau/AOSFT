@@ -70,46 +70,41 @@ class PaperTradingApp:
         self.running = False
     
     def collect_data(self):
-        self.logger.info('--- 数据采集 ---')
+        self.logger.info('--- 数据采集(OKX实时数据) ---')
         try:
-            from src.collectors.data_source_interface import CoinGeckoInterface, FearGreedInterface
-            from src.models.schemas import OHLCV, FearGreedIndex
+            from src.models.schemas import OHLCV, FearGreedIndex, OnchainNetflow, StablecoinSupply
             from src.models.data_quality_scorer import DataQualityScorer
             from src.models.data_timestamp_manager import DataTimestampManager
             from src.models.enums import DataSource
+            from src.collectors.data_source_interface import FearGreedInterface
             from datetime import datetime as dt
-            import pandas as pd
+            import ccxt
+            import numpy as np
             
             tm = DataTimestampManager(self.repo.db_path)
             scorer = DataQualityScorer(tm)
             
-            # CoinGecko免费行情数据
+            # OKX实时行情数据(公开接口，无需API密钥)
             try:
-                cg = CoinGeckoInterface()
-                ohlcv_raw = cg.session.get(
-                    'https://api.coingecko.com/api/v3/coins/bitcoin/ohlc',
-                    params={'vs_currency': 'usd', 'days': 90},
-                    timeout=30
-                )
-                ohlcv_raw.raise_for_status()
+                exchange = ccxt.okx({'enableRateLimit': True})
+                ohlcv_raw = exchange.fetch_ohlcv('BTC/USDT', '1d', limit=100)
                 count = 0
-                for item in ohlcv_raw.json():
-                    ts_ms, o, h, l, c = item
+                for item in ohlcv_raw:
+                    ts_ms, o, h, l, c, v = item
                     date = dt.fromtimestamp(ts_ms / 1000).strftime('%Y-%m-%d')
                     quality = scorer.mark_quality_score(DataSource.OKX, date)
                     ohlcv = OHLCV(
                         symbol='BTC/USDT', date=date,
-                        open=o, high=h, low=l, close=c, volume=0,
+                        open=o, high=h, low=l, close=c, volume=v,
                         data_quality=quality
                     )
                     self.repo.save_ohlcv(ohlcv)
                     count += 1
-                self.logger.info(f'CoinGecko行情: {count}条')
-                cg.close()
+                self.logger.info(f'OKX实时行情: {count}条 (最新: ${ohlcv_raw[-1][4]:,.2f})')
             except Exception as e:
-                self.logger.warning(f'CoinGecko行情获取失败: {e}')
+                self.logger.warning(f'OKX行情获取失败: {e}')
             
-            # 情绪指数
+            # 情绪指数(alternative.me)
             try:
                 fg = FearGreedInterface()
                 fg_data = fg.get_fear_greed_index(limit=30)
@@ -124,22 +119,46 @@ class PaperTradingApp:
             except Exception as e:
                 self.logger.warning(f'情绪指数获取失败: {e}')
             
-            # 生成推断性链上数据（基于价格变化）
-            import numpy as np
-            ohlcv_list = self.repo.load_ohlcv(limit=30)
-            from src.models.schemas import OnchainNetflow, StablecoinSupply
-            from src.models.enums import DataSource
-            
-            for record in ohlcv_list:
-                date, close = record['date'], record['close']
-                self.repo.save_netflow(OnchainNetflow(
-                    date=date, netflow=np.random.normal(-200, 300),
-                    source=DataSource.GLASSNODE
-                ))
-                total = 120e9 + np.random.normal(0, 1e9)
-                self.repo.save_stablecoin_supply(StablecoinSupply(
-                    date=date, usdt_supply=total*0.73, usdc_supply=total*0.27, total_supply=total
-                ))
+            # CoinMetrics链上数据(免费社区版API)
+            try:
+                from src.collectors.onchain_interface import CoinMetricsInterface
+                cm = CoinMetricsInterface()
+                
+                since_date = (dt.now() - __import__('datetime').timedelta(days=30)).strftime('%Y-%m-%d')
+                cm_netflow = cm.get_exchange_netflow(since=since_date)
+                for item in cm_netflow:
+                    nf = OnchainNetflow(
+                        date=item['date'], netflow=item['netflow'],
+                        source=DataSource.COINMETRICS
+                    )
+                    self.repo.save_netflow(nf)
+                self.logger.info(f'链上净流入(CoinMetrics): {len(cm_netflow)}条')
+                
+                cm_stable = cm.get_stablecoin_supply(since=since_date)
+                for item in cm_stable:
+                    sc = StablecoinSupply(
+                        date=item['date'],
+                        usdt_supply=item['usdt_supply'],
+                        usdc_supply=item['usdc_supply'],
+                        total_supply=item['total_supply']
+                    )
+                    self.repo.save_stablecoin_supply(sc)
+                self.logger.info(f'稳定币供应(CoinMetrics): {len(cm_stable)}条')
+                
+                cm.close()
+            except Exception as e:
+                self.logger.warning(f'CoinMetrics链上数据获取失败: {e}，使用模拟数据')
+                ohlcv_list = self.repo.load_ohlcv(limit=30)
+                for record in ohlcv_list:
+                    date_val = record['date']
+                    self.repo.save_netflow(OnchainNetflow(
+                        date=date_val, netflow=np.random.normal(-200, 300),
+                        source=DataSource.GLASSNODE
+                    ))
+                    total = 120e9 + np.random.normal(0, 1e9)
+                    self.repo.save_stablecoin_supply(StablecoinSupply(
+                        date=date_val, usdt_supply=total*0.73, usdc_supply=total*0.27, total_supply=total
+                    ))
             
             self.logger.info('数据采集完成')
             return True

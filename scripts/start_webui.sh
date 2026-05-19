@@ -14,4 +14,5 @@ import streamlit.web.bootstrap as bootstrap
 
 if __name__ == '__main__':
     script_path = str(project_root / "src" / "web" / "dashboard.py")
+    flagfile = str(project_root / ".streamlit" / "config.toml")
     bootstrap.run(script_path, "", [], {})

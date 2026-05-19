@@ -22,6 +22,7 @@ class DataCollectionCoordinator:
         self.quality_scorer = DataQualityScorer(self.timestamp_manager)
         self._okx_market = None
         self._glassnode = None
+        self._coinmetrics = None
         self._coingecko = None
         self._fear_greed = None
     
@@ -42,6 +43,13 @@ class DataCollectionCoordinator:
             from ..collectors.onchain_interface import GlassnodeInterface
             self._glassnode = GlassnodeInterface(self.config.api.glassnode_api_key)
         return self._glassnode
+    
+    @property
+    def coinmetrics(self):
+        if self._coinmetrics is None:
+            from ..collectors.onchain_interface import CoinMetricsInterface
+            self._coinmetrics = CoinMetricsInterface()
+        return self._coinmetrics
     
     @property
     def coingecko(self):
@@ -102,28 +110,29 @@ class DataCollectionCoordinator:
     
     def _collect_netflow(self) -> int:
         try:
-            if not self.glassnode:
-                logger.warning("[COLLECTOR] Glassnode未配置，跳过链上数据采集")
-                return 0
+            if self.glassnode:
+                data = self.glassnode.get_exchange_netflow()
+                source = DataSource.GLASSNODE
+            else:
+                data = self.coinmetrics.get_exchange_netflow()
+                source = DataSource.COINMETRICS
             
-            data = self.glassnode.get_exchange_netflow()
             count = 0
-            
             for item in data[-30:]:
                 quality = self.quality_scorer.mark_quality_score(
-                    DataSource.GLASSNODE, item['date']
+                    source, item['date']
                 )
                 
                 netflow = OnchainNetflow(
                     date=item['date'],
                     netflow=item['netflow'],
-                    source=DataSource.GLASSNODE,
+                    source=source,
                     data_quality=quality
                 )
                 self.repo.save_netflow(netflow)
                 count += 1
             
-            logger.info(f"[COLLECTOR] 链上数据采集: {count}条")
+            logger.info(f"[COLLECTOR] 链上数据采集({source.value}): {count}条")
             return count
         except Exception as e:
             logger.error(f"[COLLECTOR] 链上数据采集失败: {e}")
@@ -131,12 +140,12 @@ class DataCollectionCoordinator:
     
     def _collect_stablecoin(self) -> int:
         try:
-            data = self.coingecko.get_stablecoin_supply(days=30)
+            data = self.coinmetrics.get_stablecoin_supply()
             count = 0
             
             for item in data:
                 quality = self.quality_scorer.mark_quality_score(
-                    DataSource.COINGECKO, item['date']
+                    DataSource.COINMETRICS, item['date']
                 )
                 
                 supply = StablecoinSupply(
@@ -149,7 +158,7 @@ class DataCollectionCoordinator:
                 self.repo.save_stablecoin_supply(supply)
                 count += 1
             
-            logger.info(f"[COLLECTOR] 稳定币数据采集: {count}条")
+            logger.info(f"[COLLECTOR] 稳定币数据采集(CoinMetrics): {count}条")
             return count
         except Exception as e:
             logger.error(f"[COLLECTOR] 稳定币数据采集失败: {e}")
@@ -180,6 +189,8 @@ class DataCollectionCoordinator:
             self._okx_market.close()
         if self._glassnode:
             self._glassnode.close()
+        if self._coinmetrics:
+            self._coinmetrics.close()
         if self._coingecko:
             self._coingecko.close()
         if self._fear_greed:

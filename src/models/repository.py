@@ -72,10 +72,10 @@ class DataRepository:
                 query += " AND date <= ?"
                 params.append(end_date)
             
-            query += " ORDER BY date ASC"
-            
             if limit:
-                query += f" LIMIT {limit}"
+                query = f"SELECT * FROM ({query} ORDER BY date DESC LIMIT {limit}) ORDER BY date ASC"
+            else:
+                query += " ORDER BY date ASC"
             
             rows = conn.execute(query, params).fetchall()
             return [dict(r) for r in rows]

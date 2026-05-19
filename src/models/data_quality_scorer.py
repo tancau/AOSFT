@@ -25,7 +25,7 @@ class DataQualityScorer:
         self.downgrade_threshold = downgrade_threshold
         self.stale_threshold = stale_threshold
     
-    def calculate_score(self, delay_days: int) -> float:
+    def calculate_score(self, delay_days: int, warn: bool = True) -> float:
         if delay_days <= self.full_threshold:
             return 1.0
         elif delay_days <= self.downgrade_threshold:
@@ -33,10 +33,11 @@ class DataQualityScorer:
         elif delay_days < self.stale_threshold:
             return 0.5
         else:
-            logger.warning(
-                f"[DATA-QUALITY] 数据延迟{delay_days}天>=阈值{self.stale_threshold}天，"
-                f"评分0.3，建议暂停交易"
-            )
+            if warn:
+                logger.warning(
+                    f"[DATA-QUALITY] 数据延迟{delay_days}天>=阈值{self.stale_threshold}天，"
+                    f"评分0.3，建议暂停交易"
+                )
             return 0.3
     
     def mark_quality_score(
@@ -45,7 +46,8 @@ class DataQualityScorer:
         data_date: str
     ) -> float:
         delay_days = self.timestamp_manager.calculate_freshness(source, data_date)
-        score = self.calculate_score(delay_days)
+        warn = delay_days <= 7
+        score = self.calculate_score(delay_days, warn=warn)
         
         logger.debug(
             f"[DATA-QUALITY] source={source.value} date={data_date} "

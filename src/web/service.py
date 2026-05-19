@@ -31,9 +31,10 @@ class DashboardService:
             df = pd.read_sql_query("""
                 SELECT date, open, high, low, close, volume 
                 FROM daily_ohlcv 
-                ORDER BY date ASC
+                ORDER BY date DESC
                 LIMIT ?
             """, conn, params=(days,))
+        df = df.sort_values('date').reset_index(drop=True)
         return df
     
     def get_current_position(self) -> Optional[dict]:
@@ -72,16 +73,18 @@ class DashboardService:
         with self._get_conn() as conn:
             df = pd.read_sql_query("""
                 SELECT * FROM fear_greed_index 
-                ORDER BY date ASC LIMIT ?
+                ORDER BY date DESC LIMIT ?
             """, conn, params=(days,))
+        df = df.sort_values('date').reset_index(drop=True)
         return df
     
     def get_netflow_history(self, days: int = 30) -> pd.DataFrame:
         with self._get_conn() as conn:
             df = pd.read_sql_query("""
                 SELECT * FROM onchain_netflow 
-                ORDER BY date ASC LIMIT ?
+                ORDER BY date DESC LIMIT ?
             """, conn, params=(days,))
+        df = df.sort_values('date').reset_index(drop=True)
         return df
     
     def get_risk_interceptions(self, limit: int = 20) -> pd.DataFrame:
