@@ -40,8 +40,10 @@ class PaperTradingApp:
                     return False
                 latest_date = latest.get('date', '')
                 latest_dt = dt.strptime(latest_date, '%Y-%m-%d')
+                if latest_dt.date() >= dt.now().date():
+                    return True
                 age_hours = (dt.now() - latest_dt).total_seconds() / 3600
-                return age_hours < 48
+                return age_hours < 2
             
             elif data_type == 'fear_greed':
                 fg_data = self.repo.load_fear_greed_index(days=1)
@@ -49,8 +51,10 @@ class PaperTradingApp:
                     return False
                 latest_date = fg_data[0].get('date', '')
                 latest_dt = dt.strptime(latest_date, '%Y-%m-%d')
+                if latest_dt.date() >= dt.now().date():
+                    return True
                 age_hours = (dt.now() - latest_dt).total_seconds() / 3600
-                return age_hours < 48
+                return age_hours < 2
             
             elif data_type == 'onchain':
                 netflow = self.repo.load_netflow(days=1)
@@ -58,8 +62,10 @@ class PaperTradingApp:
                     return False
                 latest_date = netflow[0].get('date', '')
                 latest_dt = dt.strptime(latest_date, '%Y-%m-%d')
+                if latest_dt.date() >= dt.now().date():
+                    return True
                 age_hours = (dt.now() - latest_dt).total_seconds() / 3600
-                return age_hours < 48
+                return age_hours < 2
             
             return False
         except Exception:
